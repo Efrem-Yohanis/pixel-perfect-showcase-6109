@@ -29,7 +29,7 @@ function Layout() {
               Cadence
             </Link>
             {path !== "/dashboard" && (
-              <Button asChild variant="ghost" size="sm"><Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> Dashboard</Link></Button>
+              <Button asChild variant="ghost" size="sm"><Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> Schedules</Link></Button>
             )}
             <div className="flex-1" />
             <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={() => setDark((d) => !d)}>
