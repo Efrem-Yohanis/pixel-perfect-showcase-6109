@@ -56,7 +56,7 @@ function Dashboard() {
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground">What's running, what failed, what's next.</p>
         </div>
-        <Button asChild><Link to="/schedules/new"><Plus className="h-4 w-4" /> New Schedule</Link></Button>
+        <div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/schedules">All Schedules</Link></Button><Button asChild variant="outline"><Link to="/runs">Run History</Link></Button><Button asChild><Link to="/schedules/new"><Plus className="h-4 w-4" /> New Schedule</Link></Button></div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
