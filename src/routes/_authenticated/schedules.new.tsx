@@ -10,6 +10,8 @@ export const Route = createFileRoute("/_authenticated/schedules/new")({
       { name: "description", content: "Create a new scheduled Python, SQL or Shell job." },
       { property: "og:title", content: "New Schedule — Cadence Scheduler" },
       { property: "og:description", content: "Create a new scheduled job." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: NewSchedule,

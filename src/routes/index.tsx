@@ -11,6 +11,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Create, monitor and manage scheduled Python, SQL and Shell jobs." },
       { property: "og:title", content: "Cadence Scheduler" },
       { property: "og:description", content: "Create, monitor and manage scheduled jobs." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
 });
