@@ -10,6 +10,8 @@ export const Route = createFileRoute("/_authenticated/schedules/$id/edit")({
       { name: "description", content: "Update a scheduled job's timing, task and notifications." },
       { property: "og:title", content: "Edit Schedule — Cadence Scheduler" },
       { property: "og:description", content: "Update a scheduled job." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: EditSchedule,
@@ -26,7 +28,7 @@ export function NotFound() {
   return (
     <div className="py-20 text-center">
       <p className="text-lg font-medium">Schedule not found</p>
-      <Button asChild variant="outline" className="mt-4"><Link to="/schedules">Back to schedules</Link></Button>
+      <Button asChild variant="outline" className="mt-4"><Link to="/dashboard">Back to schedules</Link></Button>
     </div>
   );
 }

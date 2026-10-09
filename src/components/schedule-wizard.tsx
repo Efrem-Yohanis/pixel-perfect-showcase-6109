@@ -39,17 +39,17 @@ export function ScheduleWizard({ initial, isNew }: { initial: Schedule; isNew: b
   };
 
   const next = () => {
-    if (errors[step]) { toast.error(errors[step]!); return; }
+    if (errors[step]) { toast.error(errors[step] ?? "Check the required fields"); return; }
     setStep((x) => Math.min(x + 1, STEPS.length - 1));
   };
 
   const save = (status: Schedule["status"]) => {
     const firstErr = Object.entries(errors).find(([, e]) => e);
-    if (firstErr && status !== "Draft") { setStep(+firstErr[0]); toast.error(firstErr[1]!); return; }
+    if (firstErr && status !== "Draft") { setStep(+firstErr[0]); toast.error(firstErr[1] ?? "Check the required fields"); return; }
     if (!s.name.trim()) { setStep(0); toast.error("Name is required"); return; }
     actions.save({ ...s, name: s.name.trim(), status, nextRun: status === "Active" && s.scheduleType !== "Manual" ? Date.now() + 3600_000 : undefined });
     toast.success(status === "Draft" ? "Saved as draft" : `Schedule ${isNew ? "created" : "updated"}`);
-    navigate({ to: "/schedules" });
+    navigate({ to: "/dashboard" });
   };
 
   const setCronPart = (i: number, v: string) => {
@@ -205,7 +205,7 @@ export function ScheduleWizard({ initial, isNew }: { initial: Schedule; isNew: b
       </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button variant="ghost" onClick={() => (step === 0 ? navigate({ to: "/schedules" }) : setStep(step - 1))}>
+        <Button variant="ghost" onClick={() => (step === 0 ? navigate({ to: "/dashboard" }) : setStep(step - 1))}>
           <ChevronLeft className="h-4 w-4" /> {step === 0 ? "Cancel" : "Back"}
         </Button>
         {step < STEPS.length - 1 ? (
