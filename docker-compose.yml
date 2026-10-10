@@ -1,0 +1,120 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: airflow
+      DJANGO_DB_NAME: safaricom
+      DJANGO_DB_USER: safaricom
+      DJANGO_DB_PASSWORD: ${DJANGO_DB_PASSWORD:?Set DJANGO_DB_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scheduler-backend/postgres/init-app-db.sh:/docker-entrypoint-initdb.d/01-init-app-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  airflow:
+    build:
+      context: .
+      dockerfile: airflow-scheduler/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${POSTGRES_PASSWORD}@postgres:5432/airflow
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      AIRFLOW__API__EXPOSE_CONFIG: "false"
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:?Set AIRFLOW_SECRET_KEY in .env}
+      AIRFLOW__WEBSERVER__RBAC: "true"
+      AIRFLOW_API_USERNAME: ${AIRFLOW_ADMIN_USER:?Set AIRFLOW_ADMIN_USER in .env}
+      AIRFLOW_API_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?Set AIRFLOW_ADMIN_PASSWORD in .env}
+      AIRFLOW_UID: ${AIRFLOW_UID:-50000}
+    volumes:
+      - airflow-dags:/opt/airflow/dags
+      - airflow-logs:/opt/airflow/logs
+    ports:
+      - "127.0.0.1:8080:8080"
+    command:
+      - bash
+      - -c
+      - >-
+        airflow db migrate &&
+        if airflow users list | grep -Fq "$$AIRFLOW_API_USERNAME"; then
+          echo "Airflow admin user already exists";
+        else
+          airflow users create --username "$$AIRFLOW_API_USERNAME" --password "$$AIRFLOW_API_PASSWORD" --firstname Safaricom --lastname Admin --role Admin --email airflow-admin@example.local;
+        fi &&
+        (airflow scheduler &) &&
+        exec airflow webserver
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=3)"
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  django:
+    build:
+      context: .
+      dockerfile: scheduler-backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow:
+        condition: service_healthy
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
+      DJANGO_ALLOWED_HOSTS: django,localhost,127.0.0.1
+      DATABASE_URL: postgresql://safaricom:${DJANGO_DB_PASSWORD}@postgres:5432/safaricom
+      AIRFLOW_API_URL: http://airflow:8080
+      AIRFLOW_API_USERNAME: ${AIRFLOW_ADMIN_USER}
+      AIRFLOW_API_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD}
+      AIRFLOW_DAGS_DIR: /shared-dags
+    volumes:
+      - airflow-dags:/shared-dags
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  ui:
+    build:
+      context: .
+      dockerfile: scheduler-ui/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      django:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5173:5173"
+    environment:
+      DJANGO_API_URL: http://django:8000
+    volumes:
+      - ./scheduler-ui:/app
+      - ui-node-modules:/app/node_modules
+
+volumes:
+  postgres-data:
+  airflow-dags:
+  airflow-logs:
+  ui-node-modules:
